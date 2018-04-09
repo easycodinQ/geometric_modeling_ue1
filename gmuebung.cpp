@@ -32,10 +32,10 @@ glm::vec3 halbwert(glm::vec3 a, glm::vec3 b){
 }
 
 pointList reduce(pointList input){
-    pointList result(input.size()-1);
+    pointList result;
 
-    for( int i=0; i< input.size();i++){
-        result[i] = halbwert(input[i],input[i+1]);
+    for( int i=0; i< input.size()-1;i++){
+        result.push_back(halbwert(input[i],input[i+1]));
     }
 
     return result;
@@ -47,15 +47,15 @@ pair<pointList, pointList> kabeljau(pointList inputList){
     pointList second(n);
     vector<pointList> resultMap;
 
-    resultMap[0] = inputList;
+    resultMap.push_back(inputList);
 
     for(int i = 1; i<n;i++){
-        resultMap[i] = reduce(resultMap[i-1]);
+        resultMap.push_back(reduce(resultMap[i-1]));
     }
 
     for(int i = 0; i<resultMap.size();i++){
-        first[i]=resultMap[i].front();
-        second[n-i]=resultMap[i].back();
+        first[i] = resultMap[i].front();
+        second[n-1-i]=resultMap[i].back();
     }
 
     return pair<pointList,pointList> (first,second);
