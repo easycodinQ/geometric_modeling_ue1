@@ -13,16 +13,20 @@ typedef vector<glm::vec3> pointList ;
 
 class BezierCurve {
     pointList controlPoints;
-    pointList bezierPoints;
     glm::vec3 pointColor = glm::vec3(1.0,1.0,1.0);
     glm::vec3 bezierColor = glm::vec3(0.0,1.0,0.0);
     glm::vec3 curveColor = glm::vec3(1.0,0.0,1.0);
 
 
-public:
+    static int offsetCounter;
 
+public:
+    int offset;
     BezierCurve(pointList controlPoints);
     void draw();
+    void select();
+    void updatePoint(glm::vec3 point, int n);
+    int offsetEnd();
 
 private:
     glm::vec3 halbwert(glm::vec3 a, glm::vec3 b);
@@ -30,7 +34,7 @@ private:
     pair<pointList, pointList> deCasteljau(pointList inputList);
     void drawPointList(pointList input, glm::vec3 color);
     void plot_bezier(pointList input, int k);
-    void drawSinglePoints(pointList input, glm::vec3 color);
+    void drawSinglePoints(pointList input, glm::vec3 color, GLenum mode = GL_RENDER);
 
 };
 

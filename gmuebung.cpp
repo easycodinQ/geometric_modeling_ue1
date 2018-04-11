@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <glm/glm.hpp>
 #include <vector>
+#include "BezierCurve.h"
 
 #if !defined(BUFSIZE)
 #define BUFSIZE 512
@@ -21,101 +22,18 @@ pointList bezierpoints;
 glm::vec3 translationVector;
 int picked_pos=-1;
 
+vector<BezierCurve> bezierCurveList;
 
-glm::vec3 halbwert(glm::vec3 a, glm::vec3 b){
-    glm::vec3 result;
-    result.x = (a.x + b.x) / 2;
-    result.y = (a.y + b.y) / 2;
-    result.z = (a.z + b.z) / 2;
-
-    return result;
-}
-
-pointList reduce(pointList input){
-    pointList result;
-
-    for( int i=0; i< input.size()-1;i++){
-        result.push_back(halbwert(input[i],input[i+1]));
-    }
-
-    return result;
-}
-
-pair<pointList, pointList> kabeljau(pointList inputList){
-    int n = inputList.size();
-    pointList first(n);
-    pointList second(n);
-    vector<pointList> resultMap;
-
-    resultMap.push_back(inputList);
-
-    for(int i = 1; i<n;i++){
-        resultMap.push_back(reduce(resultMap[i-1]));
-    }
-
-    for(int i = 0; i<resultMap.size();i++){
-        first[i] = resultMap[i].front();
-        second[n-1-i]=resultMap[i].back();
-    }
-
-    return pair<pointList,pointList> (first,second);
-}
-
-
-
-
-
-void drawBezierCurve(pointList input) {
-    glColor3f(1.0,0.0,0.0);
-    glBegin(GL_LINE_STRIP);
-    for(int i = 0; i< input.size(); i++){
-        glVertex3f((GLfloat)input[i].x,(GLfloat)input[i].y,(GLfloat)input[i].z);
-    }
-    glEnd();
-
-}
-
-void plot_bezier(pointList input, int k){
-    if(k==0){
-        drawBezierCurve(input);
-    }
-    else{
-        pair<pointList, pointList> kabeljauPair = kabeljau(input);
-        plot_bezier(kabeljauPair.first,k-1);
-        plot_bezier(kabeljauPair.second,k-1);
-
+void drawAllCurves(){
+    for(auto&& curve : bezierCurveList){
+        curve.draw();
     }
 }
-
-void drawCurve(GLenum mode)
-{
-	glPointSize(8.0);
-	
-
-	for(int i=0;i<num_points;i++)
-	{
-	  if(mode==GL_SELECT)
-	    glLoadName(i);
-	  glBegin(GL_POINTS);
-        glVertex3f((GLfloat)points[i].x,(GLfloat)points[i].y,(GLfloat)points[i].z);
-	  glEnd();
-	}
-	
-	
-	if(mode==GL_SELECT)
-	    glPopName();
-
-	glBegin(GL_LINE_STRIP);
-	for(int i=0;i<num_points;i++)
-	{
-       glVertex3f((GLfloat)points[i].x,(GLfloat)points[i].y,(GLfloat)points[i].z);
-	}
- 	
-	glEnd();
-    pointList bezier;
-    bezier.insert(bezier.end(),points,points+num_points);
-
-    plot_bezier(bezier,4);
+void selectCurves(){
+    for(auto&& curve : bezierCurveList){
+        curve.select();
+    }
+    glPopName();
 }
 
 
@@ -167,7 +85,7 @@ int pickPoints(int x, int y)
       
 	gluPickMatrix ((GLdouble) x, (GLdouble) (viewport[3] - y),8.0, 8.0, viewport);    	 
 	gluPerspective(60.0,(GLfloat) viewport[2] / (GLfloat) viewport[3], 1.0,20.0);
-	drawCurve(GL_SELECT);
+	selectCurves();
 
 	glMatrixMode( GL_PROJECTION );
 	glPopMatrix();	
@@ -213,6 +131,11 @@ void mouseMove(int x, int y)
      gluUnProject((GLdouble)new_pos_x,(GLdouble)new_pos_y,z,cmvm,cpm,viewport,&objx,&objy,&objz);
         
      if(picked_pos>=0)
+         for(auto&& curve: bezierCurveList){
+            if(picked_pos>= curve.offset && picked_pos< curve.offsetEnd()){
+                curve.updatePoint(glm::vec3((double)objx,(double)objy,round((double)objz)),picked_pos-curve.offset);
+            }
+     }
         points[picked_pos]=glm::vec3((double)objx,(double)objy,round((double)objz));
 
     
@@ -226,7 +149,7 @@ void display(void)
     glMatrixMode(GL_MODELVIEW);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glColor3f (1.0, 1.0, 1.0);
-    drawCurve(GL_RENDER);
+    drawAllCurves();
     glutSwapBuffers();
 }
 
@@ -234,12 +157,21 @@ void init(void)
 {
     glClearColor(0.0,0.0,0.0,0.0);
     glShadeModel(GL_FLAT);
-    points[0]=glm::vec3(-3.0,0.0,-15.0);
-    points[1]=glm::vec3(-3.0,3.0,-15.0);
-    points[2]=glm::vec3(3.0,3.0,-15.0);
-    points[3]=glm::vec3(3.0,0.0,-15.0);
+    pointList c1;
+    c1.push_back(glm::vec3(-5.0,0.0,-15.0));
+    c1.push_back(glm::vec3(-5.0,5.0,-15.0));
+    c1.push_back(glm::vec3(3.0,3.0,-15.0));
+    c1.push_back(glm::vec3(3.0,0.0,-15.0));
 
-    bezierpoints.insert(bezierpoints.end(),points, points+num_points);
+    bezierCurveList.emplace_back(c1);
+
+    pointList c2;
+    c2.push_back(glm::vec3(5.0,0.0,-15.0));
+    c2.push_back(glm::vec3(5.0,-5.0,-15.0));
+    c2.push_back(glm::vec3(-3.0,-3.0,-15.0));
+    c2.push_back(glm::vec3(-3.0,0.0,-15.0));
+
+    bezierCurveList.emplace_back(c2);
 
 	 
 }
