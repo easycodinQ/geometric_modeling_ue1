@@ -18,8 +18,6 @@ typedef vector<glm::vec3> pointList ;
 
 int num_points=4;
 glm::vec3* points = new glm::vec3[num_points];
-pointList bezierpoints;
-glm::vec3 translationVector;
 int picked_pos=-1;
 
 vector<BezierCurve> bezierCurveList;
@@ -136,7 +134,7 @@ void mouseMove(int x, int y)
                 curve.updatePoint(glm::vec3((double)objx,(double)objy,round((double)objz)),picked_pos-curve.offset);
             }
      }
-        points[picked_pos]=glm::vec3((double)objx,(double)objy,round((double)objz));
+
 
     
 
