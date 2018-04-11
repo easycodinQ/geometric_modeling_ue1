@@ -213,7 +213,7 @@ void mouseMove(int x, int y)
      gluUnProject((GLdouble)new_pos_x,(GLdouble)new_pos_y,z,cmvm,cpm,viewport,&objx,&objy,&objz);
         
      if(picked_pos>=0)
-        points[picked_pos]=glm::vec3((double)objx,(double)objy,(double)objz);
+        points[picked_pos]=glm::vec3((double)objx,(double)objy,round((double)objz));
 
     
 
@@ -234,10 +234,10 @@ void init(void)
 {
     glClearColor(0.0,0.0,0.0,0.0);
     glShadeModel(GL_FLAT);
-    points[0]=glm::vec3(-1.0,0.0,0.0);
-    points[1]=glm::vec3(-1.0,1.0,0.0);
-    points[2]=glm::vec3(1.0,1.0,0.0);
-    points[3]=glm::vec3(1.0,0.0,0.0);
+    points[0]=glm::vec3(-3.0,0.0,-15.0);
+    points[1]=glm::vec3(-3.0,3.0,-15.0);
+    points[2]=glm::vec3(3.0,3.0,-15.0);
+    points[3]=glm::vec3(3.0,0.0,-15.0);
 
     bezierpoints.insert(bezierpoints.end(),points, points+num_points);
 
