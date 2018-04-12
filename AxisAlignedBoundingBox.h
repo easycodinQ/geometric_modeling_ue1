@@ -21,7 +21,7 @@ class AxisAlignedBoundingBox {
 public:
     AxisAlignedBoundingBox(vec3 min, vec3 max): min(min),max(max){};
     bool intersect(AxisAlignedBoundingBox &other);
-    static AxisAlignedBoundingBox createBox(pointList input);
+    static AxisAlignedBoundingBox createBox(PointList input);
 };
 
 

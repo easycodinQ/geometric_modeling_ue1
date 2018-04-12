@@ -15,7 +15,7 @@ bool AxisAlignedBoundingBox::intersect(AxisAlignedBoundingBox &other) {
     return x && y && z;
 }
 
-AxisAlignedBoundingBox AxisAlignedBoundingBox::createBox(pointList input) {
+AxisAlignedBoundingBox AxisAlignedBoundingBox::createBox(PointList input) {
     vec3 min, max;
 
     min=max=input[0];

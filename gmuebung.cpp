@@ -15,28 +15,70 @@
 #endif
 
 using namespace std;
-typedef vector<glm::vec3> pointList ;
+typedef vector<glm::vec3> PointList ;
 
-int num_points=4;
-glm::vec3* points = new glm::vec3[num_points];
+//MOUSE_STATES
 int picked_pos=-1;
 
+//KEYBOARD_STATES
+bool SHOW_INTERSECT = false;
+bool SHOW_BEZIER_POINTS = false;
+//UI_STATES
 vector<BezierCurve> bezierCurveList;
 
-void intersect(pointList c1, pointList c2){
-    AxisAlignedBoundingBox box1 = AxisAlignedBoundingBox::createBox(c1);
-    AxisAlignedBoundingBox box2 = AxisAlignedBoundingBox::createBox(c2);
-
-    if(box1.intersect(box2)){
-
+//void intersect(PointList c1, PointList c2){
+//    AxisAlignedBoundingBox box1 = AxisAlignedBoundingBox::createBox(c1);
+//    AxisAlignedBoundingBox box2 = AxisAlignedBoundingBox::createBox(c2);
+//
+//    if(box1.intersect(box2)){
+//        if(){
+//
+//        }
+//        else if (){
+//
+//        }
+//        else{
+//            return
+//        }
+//    }
+//
+//}
+void triggerIntersection(){
+    if(SHOW_INTERSECT){
+        for(int i =0 ; i< bezierCurveList.size(); i++){
+                bezierCurveList[i].intersectWithBezierCurves(bezierCurveList);
+        }
     }
+}
+
+void toogleIntersection(){
+    SHOW_INTERSECT^=true;
+    triggerIntersection();
+
 
 }
 
+void toggleShowBezierPoints(){
+    SHOW_BEZIER_POINTS^=true;
+}
+
 void drawAllCurves(){
+//    glColor3f(1.0f,0.0f,0.0f);
+//    glPointSize(8.0f);
+//    glBegin(GL_POINTS);
+//    glVertex3f((GLfloat)0.0f,(GLfloat)0.0f,(GLfloat)0.0f);
+    glEnd();
     for(auto&& curve : bezierCurveList){
+        if(SHOW_INTERSECT){
+            curve.drawIntersectionPoints();
+        }
         curve.draw();
+
+        if(SHOW_BEZIER_POINTS){
+            curve.drawSingleBezierPoints();
+        }
     }
+
 }
 void selectCurves(){
     for(auto&& curve : bezierCurveList){
@@ -72,9 +114,6 @@ int processHits (GLint hits, GLuint buffer[])
    }
    return result;
 }
-
-
-
 
 int pickPoints(int x, int y)
 {
@@ -113,7 +152,6 @@ void mousePress(int button, int state, int x, int y)
     if((button == GLUT_LEFT_BUTTON)&&(state == GLUT_UP))
        picked_pos=-1;
 
-
     glutPostRedisplay();
 }
 
@@ -139,19 +177,17 @@ void mouseMove(int x, int y)
      glReadPixels((GLdouble)new_pos_x,(GLdouble)new_pos_y,1, 1, GL_DEPTH_COMPONENT, GL_FLOAT,&z);
      gluUnProject((GLdouble)new_pos_x,(GLdouble)new_pos_y,z,cmvm,cpm,viewport,&objx,&objy,&objz);
         
-     if(picked_pos>=0)
-         for(auto&& curve: bezierCurveList){
-            if(picked_pos>= curve.offset && picked_pos< curve.offsetEnd()){
-                curve.updatePoint(glm::vec3((double)objx,(double)objy,round((double)objz)),picked_pos-curve.offset);
-            }
+     if(picked_pos>=0){
+         for(auto&& curve: bezierCurveList) {
+             if (picked_pos >= curve.offset && picked_pos < curve.offsetEnd()) {
+                 curve.updatePoint(glm::vec3((double) objx, (double) objy, round((double) objz)),
+                                   picked_pos - curve.offset);
+             }
+         }
+         triggerIntersection();
      }
-
-
-    
-
      glutPostRedisplay();
 }
-
 
 void display(void)
 {
@@ -166,15 +202,16 @@ void init(void)
 {
     glClearColor(0.0,0.0,0.0,0.0);
     glShadeModel(GL_FLAT);
-    pointList c1;
+    PointList c1;
     c1.push_back(glm::vec3(-5.0,0.0,-15.0));
     c1.push_back(glm::vec3(-5.0,5.0,-15.0));
     c1.push_back(glm::vec3(3.0,3.0,-15.0));
     c1.push_back(glm::vec3(3.0,0.0,-15.0));
+    c1.push_back(glm::vec3(1.0,0.0,-15.0));
 
     bezierCurveList.emplace_back(c1);
 
-    pointList c2;
+    PointList c2;
     c2.push_back(glm::vec3(5.0,0.0,-15.0));
     c2.push_back(glm::vec3(5.0,-5.0,-15.0));
     c2.push_back(glm::vec3(-3.0,-3.0,-15.0));
@@ -207,6 +244,7 @@ void keyboard(unsigned char key, int x, int y)
 	    break;
 	case 'i':
 		// do something
+        toogleIntersection();
            glutPostRedisplay();
 	    break;
 	case 'c':   
@@ -221,8 +259,17 @@ void keyboard(unsigned char key, int x, int y)
 	    // do something
             glutPostRedisplay();
 	    break;
+    case VK_ESCAPE:
+        //shutdown;
+        exit(0);
+        break;
+    case 'b':
+        toggleShowBezierPoints();
+        glutPostRedisplay();
+        break;
 
-	}
+
+}
 	
 }
 

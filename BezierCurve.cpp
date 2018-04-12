@@ -10,79 +10,78 @@
 #include <iostream>
 #include "BezierCurve.h"
 #include "Line.h"
+#include "AxisAlignedBoundingBox.h"
 
 using namespace std;
 using namespace glm;
 
-typedef vector<glm::vec3> pointList ;
+typedef vector<glm::vec3> PointList ;
 
 int BezierCurve::offsetCounter = 0;
 
 
 
 void BezierCurve::draw(){
-   drawPointList(bezierPoints,curveColor);
-    drawPointList(controlPoints,bezierColor);
-    drawSinglePoints(bezierPoints,bezierPointColor,4.0f);
+    drawPointList(controlPoints,controlColor);
+    drawPointList(bezierPoints,bezierColor,2.0f);
+
+    //drawSinglePoints(bezierPoints,bezierPointColor,4.0f);
     drawSinglePoints(controlPoints, pointColor,8.0f);
 }
 
 void BezierCurve::update(){
     bezierPoints.clear();
     bezierPoints = plot_bezier(controlPoints);
+
     draw();
+}
+
+void BezierCurve::drawIntersectionPoints(){
+    if(intersectionPoints.size()>0){
+        drawSinglePoints(intersectionPoints,intersectionColor,15.0f);
+    }
+};
+void BezierCurve::drawSingleBezierPoints(){
+    drawSinglePoints(bezierPoints,bezierPointColor, 3.0f);
 }
 
 void BezierCurve::select(){
     drawSinglePoints(controlPoints,pointColor,8.0f,GL_SELECT);
 }
 
-BezierCurve::BezierCurve(pointList controlPoints): offset(offsetCounter) {
+BezierCurve::BezierCurve(PointList controlPoints): offset(offsetCounter) {
     this->offsetCounter+=controlPoints.size();
     this->controlPoints = std::move(controlPoints);
     update();
 }
 
-vec3 BezierCurve::halbwert(vec3 a, vec3 b){
-    vec3 result;
-    result.x = (a.x + b.x) / 2;
-    result.y = (a.y + b.y) / 2;
-    result.z = (a.z + b.z) / 2;
-
-    return result;
-}
-
-pointList BezierCurve::reduce(pointList input){
-    pointList result;
-
+PointList BezierCurve::reduce(PointList input){
+    PointList result;
     for( int i=0; i< input.size()-1;i++){
-        result.push_back(halbwert(input[i],input[i+1]));
+        result.push_back((input[i]+input[i+1])*0.5f);
     }
-
     return result;
 }
 
-pair<pointList, pointList> BezierCurve::deCasteljau(pointList inputList){
+pair<PointList, PointList> BezierCurve::deCasteljau(PointList inputList){
     int n = inputList.size();
-    pointList first(n);
-    pointList second(n);
-    vector<pointList> resultMap;
-
+    PointList first(n);
+    PointList second(n);
+    vector<PointList> resultMap;
     resultMap.push_back(inputList);
 
     for(int i = 1; i<n;i++){
         resultMap.push_back(reduce(resultMap[i-1]));
     }
-
     for(int i = 0; i<resultMap.size();i++){
         first[i] = resultMap[i].front();
         second[n-1-i]=resultMap[i].back();
     }
-
-    return pair<pointList,pointList> (first,second);
+    return pair<PointList,PointList> (first,second);
 }
-void BezierCurve::drawPointList(pointList input, glm::vec3 color) {
+void BezierCurve::drawPointList(PointList input, glm::vec3 color, float pointSize) {
     glColor3fv(glm::value_ptr(color));
+    glLineWidth(pointSize);
     glBegin(GL_LINE_STRIP);
     for(int i = 0; i< input.size(); i++){
         glVertex3f((GLfloat)input[i].x,(GLfloat)input[i].y,(GLfloat)input[i].z);
@@ -90,7 +89,7 @@ void BezierCurve::drawPointList(pointList input, glm::vec3 color) {
     glEnd();
 }
 
-void BezierCurve::drawSinglePoints(pointList input, glm::vec3 color, float pointSize, GLenum mode) {
+void BezierCurve::drawSinglePoints(PointList input, glm::vec3 color, float pointSize, GLenum mode) {
     glPointSize(pointSize);
     glColor3fv(glm::value_ptr(color));
 
@@ -103,12 +102,12 @@ void BezierCurve::drawSinglePoints(pointList input, glm::vec3 color, float point
     }
 }
 
-pointList BezierCurve::plot_bezier(pointList input){
+PointList BezierCurve::plot_bezier(PointList input){
     if(flatness(input)){
         return input;
     }
     else{
-        pair<pointList, pointList> deCasteljauPair = deCasteljau(input);
+        pair<PointList, PointList> deCasteljauPair = deCasteljau(input);
         deCasteljauPair.first = plot_bezier(deCasteljauPair.first);
         deCasteljauPair.second = plot_bezier(deCasteljauPair.second);
         deCasteljauPair.first.insert(
@@ -130,7 +129,7 @@ void BezierCurve::updatePoint(glm::vec3 point, int n) {
     update();
 }
 
-bool BezierCurve::flatness(pointList input, float eps){
+bool BezierCurve::flatness(PointList input, float eps){
     for(int i =1; i<input.size()-1;i++){
         if ( Line(input[i+1]-input[i], input[i]-input[i-1]).magnitude > eps){
             return false;
@@ -139,4 +138,82 @@ bool BezierCurve::flatness(pointList input, float eps){
     return true;
 }
 
+void BezierCurve::intersectWithBezierCurves(vector<BezierCurve> &bezierList) {
+    intersectionPoints.clear();
+    for (auto&& other : bezierList){
+        if(this->offset != other.offset){
+            auto tmp = computeIntersectionPoints(bezierPoints, other.bezierPoints);
+            intersectionPoints.insert(intersectionPoints.end(),tmp.begin(),tmp.end());
+        }
+        else{
+            auto selfCut = intersectionListCut(bezierPoints);
+            auto tmp = computeSelfIntersectionPoints(selfCut.first,selfCut.second);
+            intersectionPoints.insert(intersectionPoints.end(),tmp.begin(),tmp.end());
+        }
 
+
+    }
+}
+pair<PointList, PointList> BezierCurve::intersectionListCut(PointList in){
+    PointList a (in.begin(),in.begin()+in.size()/2+1);
+    PointList b (in.begin()+in.size()/2, in.end());
+    return pair<PointList, PointList> (a,b);
+};
+
+PointList BezierCurve::computeSelfIntersectionPoints(PointList a, PointList b){
+    PointList result{};
+
+    return result;
+}
+
+PointList BezierCurve::computeIntersectionPoints(PointList a, PointList b){
+
+    AxisAlignedBoundingBox boxA = AxisAlignedBoundingBox::createBox(a);
+    AxisAlignedBoundingBox boxB = AxisAlignedBoundingBox::createBox(b);
+    PointList result{};
+
+    if(boxA.intersect(boxB)){
+
+        if(!flatness(a)){
+            //cut a in half
+            pair<PointList, PointList> cutA = intersectionListCut(a);
+
+            PointList a1 = computeIntersectionPoints(cutA.first,b);
+            PointList a2 = computeIntersectionPoints(cutA.second,b);
+
+
+            result.insert(result.end(),a1.begin(),a1.end());
+            result.insert(result.end(),a2.begin(),a2.end());
+            return result;
+
+
+        }
+        else if(!flatness(b)){
+            //cut b in half
+
+            pair<PointList, PointList> cutB = intersectionListCut(b);
+
+            PointList b1 = computeIntersectionPoints(a,cutB.first);
+            PointList b2 = computeIntersectionPoints(a,cutB.second);
+
+
+            result.insert(result.end(),b1.begin(),b1.end());
+            result.insert(result.end(),b2.begin(),b2.end());
+            return result;
+
+        }
+        else{
+            auto point = Line::intersectLines( Line(a.front(),a.back()), Line(b.front(),b.back()));
+            if(point)
+                result.push_back(*point);
+            return result;
+
+        }
+
+
+    }
+    else{
+        return result;
+    }
+
+}

@@ -13,42 +13,50 @@
 #include <GL/gl.h>
 
 using namespace std;
-typedef vector<glm::vec3> pointList ;
+using namespace glm;
+typedef vector<glm::vec3> PointList ;
 
-const float EPSILON = 0.01f;
+const float EPSILON = 0.001f;
 
 class BezierCurve {
-    pointList controlPoints;
+    PointList controlPoints;
+    PointList intersectionPoints;
 
-    glm::vec3 pointColor = glm::vec3(1.0,1.0,1.0);
-    glm::vec3 bezierColor = glm::vec3(0.0,1.0,0.0);
+    glm::vec3 pointColor = glm::vec3(0.7,1.0,0.4);
+    glm::vec3 controlColor = glm::vec3(0.0,1.0,0.0);
     glm::vec3 bezierPointColor = glm::vec3(0.0,1.0,1.0);
-    glm::vec3 curveColor = glm::vec3(1.0,0.0,1.0);
+    glm::vec3 bezierColor = glm::vec3(1.0,0.0,1.0);
+    glm::vec3 intersectionColor = glm::vec3(1.0,0.1,0.2);
 
 
     static int offsetCounter;
 
 
 public:
-    pointList bezierPoints;
+    PointList bezierPoints;
     int offset;
-    BezierCurve(pointList controlPoints);
+    BezierCurve(PointList controlPoints);
     void draw();
+    void drawIntersectionPoints();
+    void drawSingleBezierPoints();
     void update();
     void select();
     void updatePoint(glm::vec3 point, int n);
     int offsetEnd();
     virtual ~BezierCurve() = default;
-    bool flatness(pointList input, float eps= EPSILON);
+    bool flatness(PointList input, float eps= EPSILON);
+
+    void intersectWithBezierCurves(vector<BezierCurve> &bezierList);
 
 private:
-    glm::vec3 halbwert(glm::vec3 a, glm::vec3 b);
-    pointList reduce(pointList input);
-    pair<pointList, pointList> deCasteljau(pointList inputList);
-    void drawPointList(pointList input, glm::vec3 color);
-    pointList plot_bezier(pointList input);
-    void drawSinglePoints(pointList input, glm::vec3 color,float pointSize, GLenum mode = GL_RENDER);
-
+    PointList reduce(PointList input);
+    pair<PointList, PointList> deCasteljau(PointList inputList);
+    void drawPointList(PointList input, glm::vec3 color, float pointSize=1.0f);
+    PointList plot_bezier(PointList input);
+    void drawSinglePoints(PointList input, glm::vec3 color,float pointSize, GLenum mode = GL_RENDER);
+    pair<PointList, PointList> intersectionListCut(PointList in);
+    PointList computeIntersectionPoints(PointList a, PointList b);
+    PointList computeSelfIntersectionPoints(PointList a, PointList b);
 
 
 };
