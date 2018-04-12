@@ -4,34 +4,47 @@
 
 #include <glm/vec3.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <utility> #include <vector>
+#include <utility>
+#include <vector>
 #include <GL/gl.h>
 #include <iostream>
 #include "BezierCurve.h"
+#include "Line.h"
 
 using namespace std;
+using namespace glm;
 
 typedef vector<glm::vec3> pointList ;
 
 int BezierCurve::offsetCounter = 0;
 
+
+
 void BezierCurve::draw(){
-    plot_bezier(controlPoints,5);
+   drawPointList(bezierPoints,curveColor);
     drawPointList(controlPoints,bezierColor);
-    drawSinglePoints(controlPoints, pointColor);
+    drawSinglePoints(bezierPoints,bezierPointColor,4.0f);
+    drawSinglePoints(controlPoints, pointColor,8.0f);
+}
+
+void BezierCurve::update(){
+    bezierPoints.clear();
+    bezierPoints = plot_bezier(controlPoints);
+    draw();
 }
 
 void BezierCurve::select(){
-    drawSinglePoints(controlPoints,pointColor,GL_SELECT);
+    drawSinglePoints(controlPoints,pointColor,8.0f,GL_SELECT);
 }
 
 BezierCurve::BezierCurve(pointList controlPoints): offset(offsetCounter) {
     this->offsetCounter+=controlPoints.size();
     this->controlPoints = std::move(controlPoints);
+    update();
 }
 
-glm::vec3 BezierCurve::halbwert(glm::vec3 a, glm::vec3 b){
-    glm::vec3 result;
+vec3 BezierCurve::halbwert(vec3 a, vec3 b){
+    vec3 result;
     result.x = (a.x + b.x) / 2;
     result.y = (a.y + b.y) / 2;
     result.z = (a.z + b.z) / 2;
@@ -75,11 +88,10 @@ void BezierCurve::drawPointList(pointList input, glm::vec3 color) {
         glVertex3f((GLfloat)input[i].x,(GLfloat)input[i].y,(GLfloat)input[i].z);
     }
     glEnd();
-
 }
 
-void BezierCurve::drawSinglePoints(pointList input, glm::vec3 color, GLenum mode) {
-    glPointSize(8.0);
+void BezierCurve::drawSinglePoints(pointList input, glm::vec3 color, float pointSize, GLenum mode) {
+    glPointSize(pointSize);
     glColor3fv(glm::value_ptr(color));
 
     for(int i = 0; i< input.size(); i++){
@@ -91,17 +103,23 @@ void BezierCurve::drawSinglePoints(pointList input, glm::vec3 color, GLenum mode
     }
 }
 
-void BezierCurve::plot_bezier(pointList input, int k){
-    if(k==0){
-        drawPointList(input, curveColor);
+pointList BezierCurve::plot_bezier(pointList input){
+    if(flatness(input)){
+        return input;
     }
     else{
         pair<pointList, pointList> deCasteljauPair = deCasteljau(input);
-        plot_bezier(deCasteljauPair.first,k-1);
-        plot_bezier(deCasteljauPair.second,k-1);
-
+        deCasteljauPair.first = plot_bezier(deCasteljauPair.first);
+        deCasteljauPair.second = plot_bezier(deCasteljauPair.second);
+        deCasteljauPair.first.insert(
+                deCasteljauPair.first.end(),
+                deCasteljauPair.second.begin(),
+                deCasteljauPair.second.end()
+                );
+        return deCasteljauPair.first;
     }
 }
+
 
 int BezierCurve::offsetEnd() {
     return offset+controlPoints.size();
@@ -109,5 +127,16 @@ int BezierCurve::offsetEnd() {
 
 void BezierCurve::updatePoint(glm::vec3 point, int n) {
     controlPoints[n] = point;
+    update();
 }
+
+bool BezierCurve::flatness(pointList input, float eps){
+    for(int i =1; i<input.size()-1;i++){
+        if ( Line(input[i+1]-input[i], input[i]-input[i-1]).magnitude > eps){
+            return false;
+        }
+    }
+    return true;
+}
+
 

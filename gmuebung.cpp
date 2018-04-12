@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include "BezierCurve.h"
+#include "AxisAlignedBoundingBox.h"
 
 #if !defined(BUFSIZE)
 #define BUFSIZE 512
@@ -21,6 +22,16 @@ glm::vec3* points = new glm::vec3[num_points];
 int picked_pos=-1;
 
 vector<BezierCurve> bezierCurveList;
+
+void intersect(pointList c1, pointList c2){
+    AxisAlignedBoundingBox box1 = AxisAlignedBoundingBox::createBox(c1);
+    AxisAlignedBoundingBox box2 = AxisAlignedBoundingBox::createBox(c2);
+
+    if(box1.intersect(box2)){
+
+    }
+
+}
 
 void drawAllCurves(){
     for(auto&& curve : bezierCurveList){
@@ -220,7 +231,7 @@ int main(int argc, char** argv)
     glutInit(&argc,argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH );
     glutInitWindowPosition( 0, 0 );
-    glutInitWindowSize( 600, 360 );
+    glutInitWindowSize( 800, 600);
     glutCreateWindow( "GM Uebung SoSe 2018" );
 
     init();
