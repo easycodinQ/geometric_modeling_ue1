@@ -8,6 +8,8 @@
 #include <vector>
 #include <GL/gl.h>
 #include <iostream>
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include "BezierCurve.h"
 #include "Line.h"
 #include "AxisAlignedBoundingBox.h"
@@ -142,28 +144,61 @@ void BezierCurve::intersectWithBezierCurves(vector<BezierCurve> &bezierList) {
     intersectionPoints.clear();
     for (auto&& other : bezierList){
         if(this->offset != other.offset){
-            auto tmp = computeIntersectionPoints(bezierPoints, other.bezierPoints);
+            auto tmp = computeIntersectionPoints(controlPoints, other.controlPoints);
             intersectionPoints.insert(intersectionPoints.end(),tmp.begin(),tmp.end());
         }
         else{
-            auto selfCut = intersectionListCut(bezierPoints);
-            auto tmp = computeSelfIntersectionPoints(selfCut.first,selfCut.second);
-            intersectionPoints.insert(intersectionPoints.end(),tmp.begin(),tmp.end());
+
+            auto listOfLists = computeSelfIntersectionLists(controlPoints);
+            PointList finalPoints;
+            for(int i = 0; i<listOfLists.size();i++){
+                PointList a = listOfLists[i];
+                for(int j = i+1; j<listOfLists.size();j++){
+                    auto tmpPoints = computeIntersectionPoints(a,listOfLists[j]);
+                    intersectionPoints.insert(intersectionPoints.end(),tmpPoints.begin(),tmpPoints.end());
+                }
+            }
+
+            // intersectionPoints.insert(intersectionPoints.end(),finalPoints.begin(),finalPoints.end());
         }
 
 
     }
 }
-pair<PointList, PointList> BezierCurve::intersectionListCut(PointList in){
-    PointList a (in.begin(),in.begin()+in.size()/2+1);
-    PointList b (in.begin()+in.size()/2, in.end());
-    return pair<PointList, PointList> (a,b);
-};
 
-PointList BezierCurve::computeSelfIntersectionPoints(PointList a, PointList b){
-    PointList result{};
+bool over180Degrees(PointList input) {
+    auto currentAngle = 0.0;
+        for(int i=0; i<input.size()-1;i++) {
+            auto a = Line(input[i], input[i + 1]);
+            auto b = Line(input[i + 1], input[i + 2]);
+            currentAngle += Line::getAngle(a, b);
 
-    return result;
+            if (currentAngle > M_PI || currentAngle < -M_PI) {
+                return true;
+            }
+        }
+
+    return false;
+}
+
+vector<PointList> BezierCurve::computeSelfIntersectionLists(PointList input){
+    vector<PointList> result;
+    if(over180Degrees(input)){
+        pair<PointList, PointList> deCasteljauPair = deCasteljau(input);
+        vector<PointList> i1 = computeSelfIntersectionLists(deCasteljauPair.first);
+        vector<PointList> i2 = computeSelfIntersectionLists(deCasteljauPair.second);
+
+        result.insert(result.end(),i1.begin(),i1.end());
+        result.insert(result.end(),i2.begin(),i2.end());
+
+        return result;
+
+    }
+    else{
+        result.push_back(input);
+        return result;
+    }
+
 }
 
 PointList BezierCurve::computeIntersectionPoints(PointList a, PointList b){
@@ -176,7 +211,7 @@ PointList BezierCurve::computeIntersectionPoints(PointList a, PointList b){
 
         if(!flatness(a)){
             //cut a in half
-            pair<PointList, PointList> cutA = intersectionListCut(a);
+            pair<PointList, PointList> cutA = deCasteljau(a);
 
             PointList a1 = computeIntersectionPoints(cutA.first,b);
             PointList a2 = computeIntersectionPoints(cutA.second,b);
@@ -191,7 +226,7 @@ PointList BezierCurve::computeIntersectionPoints(PointList a, PointList b){
         else if(!flatness(b)){
             //cut b in half
 
-            pair<PointList, PointList> cutB = intersectionListCut(b);
+            pair<PointList, PointList> cutB = deCasteljau(b);
 
             PointList b1 = computeIntersectionPoints(a,cutB.first);
             PointList b2 = computeIntersectionPoints(a,cutB.second);

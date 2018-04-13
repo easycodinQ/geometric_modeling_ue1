@@ -9,6 +9,7 @@
 #include <vector>
 #include "BezierCurve.h"
 #include "AxisAlignedBoundingBox.h"
+#include "Line.h"
 
 #if !defined(BUFSIZE)
 #define BUFSIZE 512
@@ -21,7 +22,7 @@ typedef vector<glm::vec3> PointList ;
 int picked_pos=-1;
 
 //KEYBOARD_STATES
-bool SHOW_INTERSECT = false;
+bool SHOW_INTERSECT = true;
 bool SHOW_BEZIER_POINTS = false;
 //UI_STATES
 vector<BezierCurve> bezierCurveList;
@@ -182,6 +183,7 @@ void mouseMove(int x, int y)
              if (picked_pos >= curve.offset && picked_pos < curve.offsetEnd()) {
                  curve.updatePoint(glm::vec3((double) objx, (double) objy, round((double) objz)),
                                    picked_pos - curve.offset);
+
              }
          }
          triggerIntersection();
@@ -259,7 +261,7 @@ void keyboard(unsigned char key, int x, int y)
 	    // do something
             glutPostRedisplay();
 	    break;
-    case VK_ESCAPE:
+    case 27:
         //shutdown;
         exit(0);
         break;
@@ -275,6 +277,7 @@ void keyboard(unsigned char key, int x, int y)
 
 int main(int argc, char** argv)
 {
+
     glutInit(&argc,argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH );
     glutInitWindowPosition( 0, 0 );
@@ -282,6 +285,8 @@ int main(int argc, char** argv)
     glutCreateWindow( "GM Uebung SoSe 2018" );
 
     init();
+
+
 
     glutMouseFunc(mousePress);
     glutMotionFunc(mouseMove);

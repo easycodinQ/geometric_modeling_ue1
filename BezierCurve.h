@@ -19,8 +19,7 @@ typedef vector<glm::vec3> PointList ;
 const float EPSILON = 0.001f;
 
 class BezierCurve {
-    PointList controlPoints;
-    PointList intersectionPoints;
+
 
     glm::vec3 pointColor = glm::vec3(0.7,1.0,0.4);
     glm::vec3 controlColor = glm::vec3(0.0,1.0,0.0);
@@ -33,6 +32,8 @@ class BezierCurve {
 
 
 public:
+    PointList controlPoints;
+    PointList intersectionPoints;
     PointList bezierPoints;
     int offset;
     BezierCurve(PointList controlPoints);
@@ -56,7 +57,7 @@ private:
     void drawSinglePoints(PointList input, glm::vec3 color,float pointSize, GLenum mode = GL_RENDER);
     pair<PointList, PointList> intersectionListCut(PointList in);
     PointList computeIntersectionPoints(PointList a, PointList b);
-    PointList computeSelfIntersectionPoints(PointList a, PointList b);
+    vector<PointList> computeSelfIntersectionLists(PointList input);
 
 
 };
