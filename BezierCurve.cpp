@@ -24,11 +24,14 @@ int BezierCurve::offsetCounter = 0;
 
 
 void BezierCurve::draw(){
+
     drawPointList(controlPoints,controlColor);
     drawPointList(bezierPoints,bezierColor,2.0f);
 
     //drawSinglePoints(bezierPoints,bezierPointColor,4.0f);
+
     drawSinglePoints(controlPoints, pointColor,8.0f);
+
 }
 
 void BezierCurve::update(){
@@ -40,7 +43,9 @@ void BezierCurve::update(){
 
 void BezierCurve::drawIntersectionPoints(){
     if(intersectionPoints.size()>0){
+        glEnable(GL_POINT_SMOOTH);
         drawSinglePoints(intersectionPoints,intersectionColor,15.0f);
+        glDisable(GL_POINT_SMOOTH);
     }
 };
 void BezierCurve::drawSingleBezierPoints(){
@@ -238,6 +243,7 @@ PointList BezierCurve::computeIntersectionPoints(PointList a, PointList b){
 
         }
         else{
+
             auto point = Line::intersectLines( Line(a.front(),a.back()), Line(b.front(),b.back()));
             if(point)
                 result.push_back(*point);

@@ -202,6 +202,7 @@ void display(void)
 
 void init(void) 
 {
+
     glClearColor(0.0,0.0,0.0,0.0);
     glShadeModel(GL_FLAT);
     PointList c1;
@@ -212,6 +213,7 @@ void init(void)
     c1.push_back(glm::vec3(1.0,0.0,-15.0));
 
     bezierCurveList.emplace_back(c1);
+
 
     PointList c2;
     c2.push_back(glm::vec3(5.0,0.0,-15.0));

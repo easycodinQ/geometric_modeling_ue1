@@ -60,6 +60,7 @@ private:
     vector<PointList> computeSelfIntersectionLists(PointList input);
 
 
+    pair<PointList, PointList> deBoor(PointList inputList);
 };
 
 

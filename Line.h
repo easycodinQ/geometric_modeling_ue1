@@ -21,6 +21,9 @@ struct Line {
 
 public:
     static std::experimental::optional<vec3> intersectLines(Line a, Line b) {
+        if(a.start == b.start || a.start == b.ende || a.ende == b.start || a.ende == b.ende){
+            return {};
+        }
         vec3 u = a.direction;
         vec3 v = b.direction;
         vec3 w = a.start - b.start;
